@@ -1,10 +1,18 @@
 import "./style.css";
 
 import * as THREE from "three";
+import { PointerLockControls } from "three/examples/jsm/controls/PointerLockControls"
 
 //前進か後進か変数宣言
+let moveForward = false;
+let moveBackward = false;
+let moveLeft = false;
+let moveRight = false;
 
 //移動速度と移動方向の定義
+const velocity = new THREE.Vector3();
+const direction = new THREE.Vector3();
+
 
 const color = new THREE.Color();
 
@@ -41,6 +49,10 @@ light.position.set(0.5, 1, 0.75);
 scene.add(light);
 
 //FPS視点設定
+const controls = new PointerLockControls(camera, renderer.domElement);
+window.addEventListener("click", () => {
+  controls.lock();
+})
 
 /**
  * オブジェクト生成
@@ -84,14 +96,72 @@ for (let i = 0; i < 200; i++) {
 }
 
 //キーボード操作
+const onKeyDown = (e) => {
+  switch (e.code) {
+    case "KeyW":
+      moveForward = true;
+      break;
+    case "KeyS":
+      moveBackward = true;
+      break;
+    case "KeyA":
+      moveLeft = true;
+      break;
+    case "KeyD":
+      moveRight = true;
+      break;
+  }
+}
+
+const onKeyUp = (e) => {
+  switch (e.code) {
+    case "KeyW":
+      moveForward = false;
+      break;
+    case "KeyS":
+      moveBackward = false;
+      break;
+    case "KeyA":
+      moveLeft = false;
+      break;
+    case "KeyD":
+      moveRight = false;
+      break;
+  }
+}
+
+document.addEventListener("keydown", onKeyDown);
+document.addEventListener("keyup", onKeyUp);
+
+let prevTime = performance.now();
 
 function animate() {
   requestAnimationFrame(animate);
+  const time = performance.now();
 
   // 前進後進判定
+  direction.z = Number(moveForward) - Number(moveBackward);
+  direction.x = Number(moveRight) - Number(moveLeft);
 
   //ポインターがONになったら
+  if(controls.isLocked){
+    const delta = (time - prevTime) / 1000;
 
+    //減衰
+    velocity.z -= velocity.z * 5.0 * delta;
+    velocity.x -= velocity.x * 5.0 * delta;
+
+    if(moveForward || moveBackward){
+      velocity.z -= direction.z * 200 * delta;
+    }
+    if(moveRight || moveLeft){
+      velocity.x -= direction.x * 200 * delta;
+    }
+
+    controls.moveForward(-velocity.z * delta);
+    controls.moveRight(-velocity.x * delta);
+  }
+  prevTime = time;
   renderer.render(scene, camera);
 }
 
